@@ -1,6 +1,7 @@
 package com.rl.blogmanagementsystem.controller;
 
 import com.rl.blogmanagementsystem.dto.AuthResponse;
+import com.rl.blogmanagementsystem.dto.LoginRequest;
 import com.rl.blogmanagementsystem.dto.SignupRequest;
 import com.rl.blogmanagementsystem.service.AuthService;
 import org.junit.jupiter.api.MediaType;
@@ -49,5 +50,26 @@ public class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value("jwt-token"));
 
+    }
+
+    @Test
+    void loginShouldReturn200() throws Exception {
+        AuthResponse response = new AuthResponse("jwt-token");
+
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                post("/api/auth/login")
+                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                        .content("""
+                                {
+                                    "email": "test@gmail.com",
+                                    "password": "1234"
+                                }
+                                """)
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("jwt-token"));
     }
 }

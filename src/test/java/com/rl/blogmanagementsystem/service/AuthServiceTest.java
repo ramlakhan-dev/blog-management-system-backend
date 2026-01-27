@@ -1,6 +1,7 @@
 package com.rl.blogmanagementsystem.service;
 
 import com.rl.blogmanagementsystem.dto.AuthResponse;
+import com.rl.blogmanagementsystem.dto.LoginRequest;
 import com.rl.blogmanagementsystem.dto.SignupRequest;
 import com.rl.blogmanagementsystem.entity.User;
 import com.rl.blogmanagementsystem.repository.UserRepository;
@@ -11,9 +12,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -25,6 +33,9 @@ public class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
 
     @Mock
     private JwtUtil jwtUtil;
@@ -70,5 +81,51 @@ public class AuthServiceTest {
         Assertions.assertThrows(RuntimeException.class, () -> authService.signup(signupRequest));
 
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void loginShouldReturnToken() {
+        LoginRequest loginRequest = new LoginRequest(
+                "test@gmail.com",
+                "1234"
+        );
+
+        User user = new User();
+        user.setEmail("test@gmail.com");
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+
+        when(userRepository.findByEmail("test@gmail.com"))
+                .thenReturn(Optional.of(user));
+
+        when(jwtUtil.generateToken(any()))
+                .thenReturn("jwt-token");
+
+        AuthResponse res = authService.login(loginRequest);
+
+        assertNotNull(res);
+        assertEquals("jwt-token", res.getToken());
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
+    void loginShouldThrowExceptionWhenCredentialsWrong() {
+        LoginRequest loginRequest = new LoginRequest("unknown@gmail.com", "1234");
+
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(
+                        new BadCredentialsException("Invalid credentials")
+                );
+
+        verify(userRepository, never()).findByEmail(any());
+
+        BadCredentialsException exception = assertThrows(BadCredentialsException.class,
+                () -> authService.login(loginRequest)
+        );
+
+        assertEquals("Invalid credentials", exception.getMessage());
     }
 }

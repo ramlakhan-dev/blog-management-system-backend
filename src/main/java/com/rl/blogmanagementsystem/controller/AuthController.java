@@ -1,5 +1,6 @@
 package com.rl.blogmanagementsystem.controller;
 
+import com.rl.blogmanagementsystem.dto.LoginRequest;
 import com.rl.blogmanagementsystem.dto.SignupRequest;
 import com.rl.blogmanagementsystem.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,5 +21,10 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignupRequest signupRequest) {
         return new ResponseEntity<>(authService.signup(signupRequest), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        return new ResponseEntity<>(authService.login(loginRequest), HttpStatus.OK);
     }
 }
